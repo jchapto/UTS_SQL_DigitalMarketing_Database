@@ -1,0 +1,165 @@
+-- (“5”),Spring, 2022
+-- Name: Javier Chapto , Mail: javier.a.chapto@student.uts.edu.au , Student number: 14081525
+-- Website: https://ads.google.com/
+-- This database's objetive is to help anyone that is running Google Ads campaigns to analyze performance. 
+-- The following definitions illustrate some important Google Ads metrics and components:
+-- Google Ads Search: Ads appearing in searches in google.com
+-- Google Ads Display: Ads appearing in websites and apps
+-- Prospecting: Type of campaign with ads shown to users that didn’t visit the client's website.
+-- Remarketing: Type of campaign with ads shown to users that already visited the client's website.
+-- Impressions: Number of times an ad is displayed to users.
+-- Clicks: Number of times an ad is clicked.
+-- Cost: Money spent on ads.
+-- Conversions: Desirable action on the advertiser’s website after clicking an ad. For example, sale or form completed.
+-- Campaign Name: Campaigns have audiences and ad creatives inside. One audience can have many campaigns, and one campaign can have many audiences. Also, one ad creative can have many campaigns, and one campaign can have many ad creatives.
+-- Audience name: Audience determines how the ads are targeted. For example, Men from 20 to 40 years old in Sydney, who have an interest in digital marketing. An audience is created and assigned a name by the user.
+-- Creative Name: The creative is what is shown to the user in the ad. Every creative is assigned a name by the user.
+
+DROP table AudienceAdCreativeCampaign CASCADE;
+DROP table AdCreative CASCADE;
+DROP table Audience CASCADE;
+DROP table Campaign CASCADE;
+DROP table CampaignType CASCADE;
+DROP table SubNetwork CASCADE;
+DROP table AdNetwork CASCADE;
+
+Create table AdNetwork
+(
+      AdNetworkName        varchar(100),
+
+	CONSTRAINT AdNetworkPK PRIMARY KEY (AdNetworkName),
+      
+      CONSTRAINT co_Ad_Network 
+          CHECK (AdNetworkName IN ('Google Ads'))
+);
+
+
+Create table SubNetwork
+(
+      SubNetworkName        varchar(100),
+      AdNetworkName         varchar(100),
+
+	CONSTRAINT SubNetworkPK PRIMARY KEY (SubNetworkName),
+
+      CONSTRAINT SubNetworkFK_AdNetwork FOREIGN KEY (AdNetworkName) REFERENCES AdNetwork,
+
+      CONSTRAINT co_Sub_Network
+          CHECK (SubNetworkName IN ('Google Ads Search', 'Google Ads Display'))
+);
+
+
+
+Create table CampaignType
+(
+      CampaignTypeName        varchar(100),
+
+
+	CONSTRAINT CampaignTypePK PRIMARY KEY (CampaignTypeName),
+
+      CONSTRAINT co_CampaignType 
+          CHECK (CampaignTypeName IN ('Prospecting', 'Remarketing'))
+
+);
+
+Create table Audience
+(
+      AudienceName        varchar(100),
+      Location            varchar(100),
+      Age                 varchar(100),
+      Gender              varchar(100),
+
+	CONSTRAINT AudiencePK PRIMARY KEY (AudienceName),
+
+      CONSTRAINT co_Age
+          CHECK (Age IN ('20-30', '30-40', '40-50', '50-60', '60-70', '70-80')),
+      CONSTRAINT co_Gender 
+          CHECK (Gender IN ('Male', 'Female'))
+
+
+);
+
+Create table AdCreative
+(
+      AdCreativeName        varchar(100),
+      AdType                varchar(100),
+      AdTitle               varchar(100),
+
+	CONSTRAINT AdCreativePK PRIMARY KEY (AdCreativeName)
+);
+
+Create table Campaign
+(
+      CampaignName            varchar(100),
+      CampaignTypeName        varchar(100),
+      SubNetworkName          varchar(100),
+      
+
+    CONSTRAINT CampaignPK PRIMARY KEY (CampaignName),
+    CONSTRAINT CampaignFK_CampaignType FOREIGN KEY (CampaignTypeName) REFERENCES CampaignType,
+    CONSTRAINT CampaignFK_SubNetwork FOREIGN KEY (SubNetworkName) REFERENCES SubNetwork
+
+);
+
+
+
+Create table AudienceAdCreativeCampaign
+(
+      CampaignName        varchar(100),
+      AdCreativeName      varchar(100),
+      AudienceName        varchar(100),
+      Impressions         integer,
+      Clicks              integer,
+      Cost                real,
+      Conversions         integer,
+      Year                integer,
+
+       CONSTRAINT AudienceAdCreativeCampaignPK PRIMARY KEY (CampaignName, AdCreativeName, AudienceName),
+       CONSTRAINT AudienceAdCreativeCampaignFK_Audience FOREIGN KEY (AudienceName) REFERENCES Audience
+                  ON DELETE RESTRICT
+                  ON UPDATE CASCADE,
+       CONSTRAINT AudienceAdCreativeCampaignFK_AdCreative FOREIGN KEY (AdCreativeName) REFERENCES AdCreative
+                  ON DELETE CASCADE
+                  ON UPDATE CASCADE,
+       CONSTRAINT AudienceAdCreativeCampaignFK_Campaign FOREIGN KEY (CampaignName) REFERENCES Campaign,
+
+       CONSTRAINT co_impressions 
+           CHECK (Impressions >= 0),
+       CONSTRAINT co_clicks
+           CHECK (Clicks >= 0),
+       CONSTRAINT co_cost
+           CHECK (Cost >= 0),
+       CONSTRAINT co_conversions
+           CHECK (Conversions >= 0),
+       CONSTRAINT co_year
+           CHECK (Year >= 1990)
+       );
+
+CREATE VIEW AudienceAdsAndCampaigns AS
+    SELECT AdCreativeName as CreativeName, CampaignName as NameOfCampaign, AudienceName as NameOfAudience,
+           Cost as AmountSpent, Conversions as ConversionsObtained, AdType as TypeOfAd, AdTitle as TitleOfAd
+    FROM AudienceAdCreativeCampaign natural join AdCreative;
+
+INSERT INTO AdNetwork VALUES('Google Ads');
+INSERT INTO SubNetwork VALUES('Google Ads Search', 'Google Ads');
+INSERT INTO SubNetwork VALUES('Google Ads Display', 'Google Ads');
+INSERT INTO CampaignType VALUES('Prospecting');
+INSERT INTO CampaignType VALUES('Remarketing');
+INSERT INTO Audience VALUES('SearchingOnGoogleCellPhones', 'Argentina', '20-30', 'Male');
+INSERT INTO Audience VALUES('SearchingOnGoogleIphone', 'Brazil', '30-40', 'Female');
+INSERT INTO Audience VALUES('SearchingOnGoogleSamsungGalaxy', 'Mexico', '30-40', 'Female');
+INSERT INTO AdCreative VALUES('Red Cellphone', 'text', 'Red Cellphones On Sale!');
+INSERT INTO AdCreative VALUES('Black Cellphone', 'text', 'Black Cellphones On Sale!');
+INSERT INTO AdCreative VALUES('Blue Cellphone', 'text', 'Blue Cellphones On Sale!');
+INSERT INTO AdCreative VALUES('Guy with Iphone', 'video', 'Iphones on Sale!');
+INSERT INTO AdCreative VALUES('Girl with Iphone', 'video', 'Iphones on Sale!');
+INSERT INTO AdCreative VALUES('Cyber Monday', 'video', 'Cyber Monday Discounts!');
+INSERT INTO Campaign VALUES('Iphones', 'Prospecting', 'Google Ads Search');
+INSERT INTO Campaign VALUES('Cellphones', 'Prospecting', 'Google Ads Search');
+INSERT INTO Campaign VALUES('SamsungGalaxy', 'Remarketing', 'Google Ads Display');
+INSERT INTO AudienceAdCreativeCampaign VALUES('Cellphones',  'Red Cellphone', 'SearchingOnGoogleCellPhones', 20000,  1000,  1500,  75, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('Cellphones',  'Black Cellphone', 'SearchingOnGoogleCellPhones', 15000,  500,  1000,  50, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('SamsungGalaxy',  'Black Cellphone', 'SearchingOnGoogleSamsungGalaxy', 18000,  700,  1200,  60, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('SamsungGalaxy',  'Blue Cellphone', 'SearchingOnGoogleSamsungGalaxy', 16000,  500,  800,  72, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('Iphones',  'Guy with Iphone', 'SearchingOnGoogleIphone', 18500,  600,  1100, 50, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('Iphones',  'Girl with Iphone', 'SearchingOnGoogleIphone', 17000,  500,  1000, 45, 2022);
+INSERT INTO AudienceAdCreativeCampaign VALUES('Iphones',  'Cyber Monday', 'SearchingOnGoogleIphone', 17000,  500,  1000, 200, 2022);
